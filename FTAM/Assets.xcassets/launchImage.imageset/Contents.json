@@ -1,7 +1,6 @@
 {
   "images" : [
     {
-      "filename" : "Icon of a crystal ball with a funny meme inside, magical and playful, bright colors like purple and yellow, mystical symbols around the ball, modern and simple design, minimalistic style.jpg",
       "idiom" : "universal",
       "scale" : "1x"
     },
@@ -10,6 +9,7 @@
       "scale" : "2x"
     },
     {
+      "filename" : "Icon of a crystal ball with a funny meme inside, magical and playful, bright colors like purple and yellow, mystical symbols around the ball, modern and simple design, minimalistic style.jpg",
       "idiom" : "universal",
       "scale" : "3x"
     }
