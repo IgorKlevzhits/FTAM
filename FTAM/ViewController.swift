@@ -21,6 +21,14 @@ class ViewController: UIViewController, UISearchBarDelegate {
         return element
     }()
     
+    private lazy var historyButton: UIButton = {
+        let element = UIButton(type: .system)
+        element.tintColor = .purple
+        element.setImage(UIImage(systemName: "book", withConfiguration: UIImage.SymbolConfiguration(pointSize: 30)), for: .normal)
+        element.translatesAutoresizingMaskIntoConstraints = false
+        return element
+    }()
+    
     private lazy var predictionButton: UIButton = {
         let element = UIButton()
         element.layer.cornerRadius = 10
@@ -50,9 +58,11 @@ class ViewController: UIViewController, UISearchBarDelegate {
     // MARK: - Private Properties
     
     private let networkManager = NetworkManager.shared
+    private var currentMemUrl: URL = URL(string: "Default")!
     private let spacing: CGFloat = 20
     private let heightElements: CGFloat = 60
     private var isCardSelected = false
+    private var historyPrediction: [HistoryPredicrion] = []
     
     // MARK: - Private Methods
     
@@ -138,7 +148,7 @@ class ViewController: UIViewController, UISearchBarDelegate {
         }
         guard let selectedImageView = sender.view as? UIImageView else { return }
         guard let mem = networkManager.memes.randomElement() else { return }
-
+        currentMemUrl = URL(string: mem.url)!
         let screenWidth = self.view.frame.width
         let screenHeight = self.view.frame.height
         
@@ -193,6 +203,10 @@ class ViewController: UIViewController, UISearchBarDelegate {
         memeOneImageView.image = UIImage(named: "backCard")
         memeTwoImageView.image = UIImage(named: "backCard")
         memeThreeImageView.image = UIImage(named: "backCard")
+        if sender.backgroundColor == .green {
+            historyPrediction.append(HistoryPredicrion(request: requestSearchBar.text!, url: currentMemUrl))
+            saveDataToUserDefaults()
+        }
         UIView.animate(withDuration: 0.5, animations: {
             self.view.backgroundColor = sender.backgroundColor
             self.goodReactionButton.alpha = 0
@@ -204,6 +218,27 @@ class ViewController: UIViewController, UISearchBarDelegate {
         }
     }
     
+    private func saveDataToUserDefaults() {
+        let encoder = JSONEncoder()
+        if let encodedData = try? encoder.encode(historyPrediction) {
+            UserDefaults.standard.set(encodedData, forKey: "savedData")
+        }
+    }
+
+    private func loadDataFromUserDefaults() {
+        if let savedData = UserDefaults.standard.data(forKey: "savedData"),
+           let decodedData = try? JSONDecoder().decode([HistoryPredicrion].self, from: savedData) {
+            historyPrediction = decodedData
+        }
+    }
+    
+    @objc private func historyButtonTapped(_ sender: UIButton) {
+        let historyVC = HistoryTableViewController()
+        historyVC.modalTransitionStyle = .coverVertical
+        historyVC.historyPrediction = self.historyPrediction
+        present(historyVC, animated: true)
+    }
+    
     // MARK: - Life Cycle
 
     override func viewDidLoad() {
@@ -211,6 +246,7 @@ class ViewController: UIViewController, UISearchBarDelegate {
         setViews()
         setupConstraints()
         networkManager.fetchMemes()
+        loadDataFromUserDefaults()
     }
 
 }
@@ -222,6 +258,7 @@ private extension ViewController {
     func setViews() {
         view.backgroundColor = .white
         view.addSubview(requestSearchBar)
+        view.addSubview(historyButton)
         view.addSubview(predictionButton)
         
         view.addSubview(memeOneImageView)
@@ -251,6 +288,8 @@ private extension ViewController {
         memeThreeImageView.isUserInteractionEnabled = true
         memeThreeImageView.addGestureRecognizer(tapThree)
         
+        historyButton.addTarget(self, action: #selector(historyButtonTapped), for: .touchUpInside)
+        
         predictionButton.addTarget(self, action: #selector(predictionButtonTapped), for: .touchUpInside)
         requestSearchBar.searchTextField.addTarget(self, action: #selector(predictionButtonTapped), for: .touchUpInside)
         
@@ -265,8 +304,12 @@ private extension ViewController {
             
             requestSearchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: spacing),
             requestSearchBar.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: spacing),
-            requestSearchBar.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -spacing),
+            requestSearchBar.trailingAnchor.constraint(equalTo: historyButton.leadingAnchor, constant: -spacing),
             requestSearchBar.heightAnchor.constraint(equalToConstant: heightElements),
+            
+            historyButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: spacing),
+            historyButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -spacing),
+            historyButton.heightAnchor.constraint(equalToConstant: heightElements),
             
             predictionButton.topAnchor.constraint(equalTo: requestSearchBar.bottomAnchor, constant: spacing),
             predictionButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: spacing),
